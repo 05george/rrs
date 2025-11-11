@@ -2,9 +2,10 @@
      viewBox="0 0 1024 2454"style="width:100%">
   <style>
     .image-mapper-shape{fill:rgba(0,0,0,0);}
-    g:hover .image-mapper-shape { stroke: white; stroke-width: 2px; }
- #red-hover-box:hover.image-mapper-shape {stroke: red! important;stroke-width: 3px !important;} 
-</style>
+    g:hover .image-mapper-shape:not(#red-hover-box) { stroke: white; stroke-width: 2px; }
+    
+    #red-hover-box:hover.image-mapper-shape {stroke: red !important;stroke-width: 3px !important;} 
+  </style>
 <g transform="translate(0,0)">
 
   <image xlink:href="image/1.png" width="1024" />
@@ -12,7 +13,6 @@
   <a xlink:href="micro/1.pdf" target="_blank">
     <rect x="367" y="701" width="115" height="382" class="image-mapper-shape"/>
   </a>
-
   <a xlink:href="patho/1.pdf" target="_blank">
     <rect x="367" y="1082" width="115" height="256" class="image-mapper-shape"/>
   </a>
