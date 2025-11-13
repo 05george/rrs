@@ -74,28 +74,22 @@
 </g>  
     <script>
       
-      // 🟢 الدالة الجديدة اللي بتفتح الرابط حسب نوع الجهاز
+      // 🟢 الدالة اللي بتفتح الرابط حسب نوع الجهاز:
+      // - كمبيوتر: تاب جديدة
+      // - موبايل: نفس النافذة
       function openLink(event) {
-        // نمنع الفتح التلقائي للرابط
         event.preventDefault(); 
         const url = event.currentTarget.getAttribute('href');
 
-        // فحص الـ User Agent لمعرفة إذا كان الجهاز موبايل (صغير)
+        // فحص نوع الجهاز
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobi/i.test(navigator.userAgent) || (window.innerWidth <= 768);
 
         if (isMobile) {
-          // لو موبايل (أو شاشة صغيرة): افتح في نفس النافذة
+          // موبايل: افتح في نفس النافذة
           window.location.href = url;
         } else {
-          // لو كمبيوتر (أو شاشة كبيرة): افتح في تاب جديدة
+          // كمبيوتر: افتح في تاب جديدة
           window.open(url, '_blank');
-        }
-        
-        // لو كنا في حالة الـ Touch (لمس)، نوقف الـ Hover عشان الرابط يفتح بسرعة
-        const targetRect = event.currentTarget.querySelector('.image-mapper-shape');
-        if(event.type === 'touchstart' && targetRect) {
-            // عشان نضمن إن أي حالة hover سابقة توقفت عشان الرابط يفتح
-            targetRect.dispatchEvent(new Event('touchend')); 
         }
       }
 
@@ -119,18 +113,16 @@
         rect.addEventListener('mouseover', startHover);
         rect.addEventListener('mouseout', stopHover);
 
-        // 🛑 أحداث اللمس
+        // 🛑 أحداث اللمس (تم إرجاعها لتشغيل ميزة التكبير والتوهج باللمس)
         rect.addEventListener('touchstart', (e) => {
           // 🛑 إيقاف الهافر الحالي لو كان شغال على عنصر تاني
           if(activeHover && activeHover !== rect) {
-              // بنوقف الهافر السابق عن طريق استدعاء stopHover عليه
               stopHover({target: activeHover});
           }
           if(activeHover === rect) return;
-          startHover();
           
-          // 🛑 هنا بنمنع الفتح التلقائي للرابط عشان دالة openLink هي اللي تقوم بالفتح
-          e.preventDefault(); 
+          // 🛑 تفعيل الـ Hover/Zoom باللمس
+          startHover();
         });
 
         // 🛑 عند رفع الإصبع، بيتوقف الهافر
