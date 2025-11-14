@@ -106,9 +106,7 @@
           rect: null,
           zoomPart: null,
           animationId: null,
-          clipPathId: null,
-          // 🆕 إضافة تتبع لوقت بدء اللمس لمنع مشاكل الـ click المزدوجة
-          touchStartTime: 0
+          clipPathId: null
       };
 
       const groups = document.querySelectorAll('g'); 
@@ -179,47 +177,19 @@
 
         rect.setAttribute('data-index', i);
 
-        // 💻 حدث الماوس للكمبيوتر
+        // 💻 حدث الماوس للكمبيوتر (مفيش تغيير)
         rect.addEventListener('mouseover', startHover);
         rect.addEventListener('mouseout', stopHover);
 
         // 📱 حدث اللمس للموبايل (touchstart بيشغل الـ Hover)
-        rect.addEventListener('touchstart', (e) => {
-            activeState.touchStartTime = Date.now(); // 🆕 تسجيل وقت بدء اللمس
-            startHover();
-            // 🆕 منع الإجراء الافتراضي للـ touchstart فقط لو مش عايز حركة/Scroll
-            // e.preventDefault(); 
-        });
-        
-        // 📱 touchend: بيقفل الهافر وبيعتمد على الـ click الطبيعي للمتصفح لفتح الرابط
-        rect.addEventListener('touchend', (e) => {
-             // 🆕 إيقاف الـ Hover فوراً (الـ <a> هو اللي هيفتح الرابط طبيعي)
-             cleanupHover(); 
-             
-             // 🆕 منع الـ click لو كان ضغطة سريعة جداً لمنع الـ double firing 
-             // وده بيخلي الـ click يشتغل مرة واحدة بس
-             if(Date.now() - activeState.touchStartTime < 300) { 
-                e.preventDefault(); 
-                // 🆕 تنفيذ فتح الرابط يدوياً مرة واحدة
-                 if (anchor && anchor.href && anchor.href !== '#') {
-                    const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0) || (window.innerWidth < 800);
-                    if (!isMobile && anchor.getAttribute('target') === '_blank') {
-                        window.open(anchor.href, '_blank');
-                    } else {
-                        window.location.href = anchor.href;
-                    }
-                 }
-             }
-        });
-        
-        // 🆕 إزالة الحدث 'click' المزدوج اللي بيحصل بعد الـ touchend
+        rect.addEventListener('touchstart', startHover);
+
+        // 🆕 التعديل الأساسي: touchend بيقفل الهافر بس، وبنخلي الـ click يفتح الرابط بشكل طبيعي
+        rect.addEventListener('touchend', cleanupHover);
+
+        // 🆕 إزالة أي منطق لمنع الـ click/الـ delay من على الـ anchor، عشان نعتمد على سلوك المتصفح
         if (anchor) {
-            anchor.addEventListener('click', (e) => {
-                // منع الـ click بعد الـ touchend عشان الفتح يحصل مرة واحدة
-                if (Date.now() - activeState.touchStartTime < 300) {
-                    e.preventDefault();
-                }
-            });
+            anchor.removeEventListener('click', cleanupHover); // لضمان إزالة أي مستمع سابق
         }
         
         // ----------------------------------------------------
