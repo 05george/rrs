@@ -42,8 +42,8 @@
   <svg xmlns="http://www.w3.org/2000/svg"
        xmlns:xlink="http://www.w3.org/1999/xlink"
        viewBox="0 0 2048 2454"
-       preserveAspectRatio="xMidYMid meet">
-    <defs id="clip-defs"></defs>
+       preserveAspectRatio="xMidYMid meet"
+       id="main-svg"> <defs id="clip-defs"></defs>
     <g transform="translate(0,0)" id="main-group">
       <image href="image/1.png" width="1024" id="base-image"/>
 
@@ -92,27 +92,21 @@
 
   </svg>
   <script>
-    // ✅ تحديد نوع الجهاز
     const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|Mobile/i.test(navigator.userAgent);
 
-    // ✅ ضبط طريقة فتح الروابط
     document.querySelectorAll('a').forEach(a => {
-      // حذف أي target قديم كان موجود عشان الكود يتحكم فيه بالكامل
       a.removeAttribute('target');
-
       if (!isMobile) {
-        a.setAttribute('target', '_blank'); // نافذة جديدة على الديسكتوب
+        a.setAttribute('target', '_blank');
       }
     });
 
     const clipDefs = document.getElementById('clip-defs');
+    const mainSvg = document.getElementById('main-svg'); // جلب عنصر الـ SVG الرئيسي
     let activeHover = null;
     const ORIGINAL_IMAGE_HEIGHT = 2454;
-    // عرض الصورة ثابت زي ما هو 1024
-    const IMAGE_WIDTH = 1024;
+    const IMAGE_WIDTH = 1024; // عرض كل صورة فرعية
 
-
-    // 🛠️ التعديل هنا: خليت الدالة تستخلص مصدر الصورة من الـgroup اللي المستطيل جواه
     function attachHover(rect, i) {
       let zoomPart = null;
       let animationId = null;
@@ -120,13 +114,22 @@
       const scale = 1.1;
       rect.setAttribute('data-index', i);
 
-      // 🌟 تحديد الجروب الأصلي ومصدر الصورة لكل مستطيل (التعديل الأساسي)
       const parentGroup = rect.closest('g');
       const baseImage = parentGroup ? parentGroup.querySelector('image') : null;
-      if (!baseImage) return; // لو مفيش صورة أساسية، نوقف
-      // لازم نستخدم getAttribute عشان ممكن يكون xlink:href أو href
+      if (!baseImage) return;
       const IMAGE_SRC = baseImage.getAttribute('href') || baseImage.getAttribute('xlink:href');
 
+      // 🛠️ جلب قيمة الـ transform من الجروب الأب
+      const transformAttr = parentGroup.getAttribute('transform');
+      let offsetX = 0;
+      let offsetY = 0;
+      if (transformAttr && transformAttr.includes('translate')) {
+          const match = transformAttr.match(/translate\(([^,]+),([^)]+)\)/);
+          if (match) {
+              offsetX = parseFloat(match[1]);
+              offsetY = parseFloat(match[2]);
+          }
+      }
 
       rect.addEventListener('mouseover', startHover);
       rect.addEventListener('mouseout', stopHover);
@@ -147,27 +150,36 @@
         const width = parseFloat(rect.getAttribute('width'));
         const height = parseFloat(rect.getAttribute('height'));
 
+        // 🛠️ حساب الإحداثيات الكلية للـ clipPath
+        const globalClipX = x + offsetX;
+        const globalClipY = y + offsetY;
+
         let clip = document.createElementNS('http://www.w3.org/2000/svg','clipPath');
         clip.setAttribute('id', clipPathId);
         let clipRect = document.createElementNS('http://www.w3.org/2000/svg','rect');
-        clipRect.setAttribute('x', x);
-        clipRect.setAttribute('y', y);
+        clipRect.setAttribute('x', globalClipX); // استخدم الإحداثيات الكلية هنا
+        clipRect.setAttribute('y', globalClipY); // استخدم الإحداثيات الكلية هنا
         clipRect.setAttribute('width', width);
         clipRect.setAttribute('height', height);
         clipDefs.appendChild(clip).appendChild(clipRect);
 
         zoomPart = document.createElementNS('http://www.w3.org/2000/svg','image');
-        zoomPart.setAttribute('href', IMAGE_SRC); // استخدام مصدر الصورة اللي جيبناه
-        // 🛠️ هنا استخدمت IMAGE_WIDTH الثابتة لكل الصور
+        zoomPart.setAttribute('href', IMAGE_SRC);
         zoomPart.setAttribute('width', IMAGE_WIDTH);
         zoomPart.setAttribute('height', ORIGINAL_IMAGE_HEIGHT);
         zoomPart.setAttribute('class','zoom-part');
         zoomPart.setAttribute('clip-path', `url(#${clipPathId})`);
-        zoomPart.style.transformOrigin = `${x + width/2}px ${y + height/2}px`;
+        
+        // 🛠️ ضبط موقع الصورة المزومة ليتوافق مع الإحداثيات الكلية
+        zoomPart.setAttribute('x', offsetX); 
+        zoomPart.setAttribute('y', offsetY);
+
+        // 🛠️ مركز التحويل يجب أن يكون بالنسبة للإحداثيات الكلية للـ SVG
+        zoomPart.style.transformOrigin = `${globalClipX + width/2}px ${globalClipY + height/2}px`;
         zoomPart.style.opacity = 0;
 
-        // 🌟 إضافة الجزء المزوم للجروب الخاص بيه
-        parentGroup.appendChild(zoomPart);
+        // 🛠️ إضافة الجزء المزوم مباشرة للـ SVG الرئيسي
+        mainSvg.appendChild(zoomPart);
 
         rect.style.transformOrigin = `${x + width/2}px ${y + height/2}px`;
         rect.style.transform = `scale(${scale})`;
@@ -202,12 +214,10 @@
       }
     }
 
-    // 🌟 تطبيق الـhover على كل الجروبات اللي فيها شغل (بدون تغيير)
     document.querySelectorAll('#main-group, #secondary-group').forEach(group => {
       group.querySelectorAll('.image-mapper-shape').forEach((rect, i) => attachHover(rect, i));
     });
 
-    // 🌟 تعديل الـobserver عشان يراقب الـsecondary-group كمان لو في إضافة ديناميكية
     const observer = new MutationObserver(mutations => {
       mutations.forEach(mutation => {
         mutation.addedNodes.forEach((node, i) => {
