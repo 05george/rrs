@@ -170,12 +170,11 @@
         rect.addEventListener('mouseover', startHover);
         rect.addEventListener('mouseout', stopHover);
         
-        rect.addEventListener('touchstart', (e) => {
-             // e.preventDefault(); // تم إزالة منع الافتراضي للسماح للرابط بالعمل فورًا
-             startHover();
-        });
+        rect.addEventListener('touchstart', startHover);
+        
         rect.addEventListener('touchend', (e) => {
-             // تم إزالة استدعاء cleanupHover هنا لتجنب تأخير فتح الرابط
+             // عشان الهافر يتقفل مباشرة بعد ما الرابط يفتح في الموبايل
+             cleanupHover(); 
         });
 
         function startHover() {
@@ -239,8 +238,6 @@
         function stopHover(e) {
           const targetRect = e ? (e.target.tagName === 'rect' ? e.target : e.target.closest('a')?.querySelector('.image-mapper-shape')) : rect;
           
-          // التنظيف يتم فقط عند الإزالة بالماوس أو عند التوقف في الموبايل 
-          // (معتمدين على أن المتصفح هيفتح الرابط في الـ touchend)
           if(targetRect === activeState.rect && e.type === 'mouseout'){
               cleanupHover();
           }
@@ -272,6 +269,7 @@
           if (isMobile) {
             link.removeAttribute('target');
           } else {
+            // تصحيح: تحديد الـ target لـ _blank بغض النظر عن حالتها الأصلية
             link.setAttribute('target', '_blank'); 
           }
         });
