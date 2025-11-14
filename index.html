@@ -35,7 +35,6 @@
       transform-origin: center center;
       transition: transform 0.3s ease, filter 0.3s ease;
     }
-    /* 🛠️ تعديل CSS: استخدام فئات بدل IDs للألوان */
     .red-stroke { stroke: red; }
     .blue-stroke { stroke: blue; }
 
@@ -106,7 +105,6 @@
       const mainSvg = document.getElementById('main-svg');
       const clipDefs = document.getElementById('clip-defs');
       
-      // 🛠️ تم استخدام كائن لتسجيل حالة الـ Hover النشطة (Rect، ZoomPart، AnimationID)
       const activeState = {
           rect: null,
           zoomPart: null,
@@ -116,9 +114,6 @@
 
       const groups = document.querySelectorAll('g'); 
 
-      /**
-       * 🛠️ دالة مساعدة لحساب الإزاحة الأفقية (X) من خاصية الـ transform.
-       */
       function getTransformX(groupElement) {
           const transformAttr = groupElement.getAttribute('transform');
           if (!transformAttr) return 0;
@@ -126,9 +121,6 @@
           return match ? parseFloat(match[1]) : 0;
       }
 
-      /**
-       * 🛠️ دالة مساعدة لوجود صورة داخل الجروب وتحديد خصائصها.
-       */
       function getGroupImage(parentGroup) {
           const baseImage = parentGroup.querySelector('image');
           if (!baseImage) return null;
@@ -142,9 +134,8 @@
           return { src: IMAGE_SRC, width: IMAGE_WIDTH, height: IMAGE_HEIGHT };
       }
 
-      // 🛠️ دالة موحدة لتنظيف حالة الـ Hover السابقة
       function cleanupHover() {
-        if (!activeState.rect) return; // لا يوجد شيء لتنظيفه
+        if (!activeState.rect) return;
           
         if(activeState.animationId) clearInterval(activeState.animationId);
 
@@ -156,7 +147,6 @@
         const currentClip = document.getElementById(activeState.clipPathId);
         if(currentClip) currentClip.remove();
           
-        // تصفير الحالة
         activeState.rect = null;
         activeState.zoomPart = null;
         activeState.animationId = null;
@@ -166,7 +156,7 @@
 
       function attachHover(rect, i) {
         
-        const clipPathId = `clip-${i}-${Date.now()}`; // ID فريد لكل مستطيل
+        const clipPathId = `clip-${i}-${Date.now()}`;
         const scale = 1.1;
         const parentGroup = rect.closest('g'); 
 
@@ -177,37 +167,33 @@
 
         rect.setAttribute('data-index', i);
 
-        // ... أحداث الماوس واللمس
         rect.addEventListener('mouseover', startHover);
         rect.addEventListener('mouseout', stopHover);
+        
         rect.addEventListener('touchstart', (e) => {
-            // إيقاف التعامل مع اللمس مؤقتاً لتجنب تضارب الأحداث
-            e.preventDefault(); 
-            startHover();
+             // e.preventDefault(); // تم إزالة منع الافتراضي للسماح للرابط بالعمل فورًا
+             startHover();
         });
-        rect.addEventListener('touchend', stopHover);
+        rect.addEventListener('touchend', (e) => {
+             // تم إزالة استدعاء cleanupHover هنا لتجنب تأخير فتح الرابط
+        });
 
         function startHover() {
           if(activeState.rect === rect) return;
 
-          // 1. تنظيف الـ Hover النشط السابق
           cleanupHover(); 
           
-          // 2. إعداد الحالة الجديدة
           activeState.rect = rect;
           activeState.clipPathId = clipPathId;
 
-          // الإحداثيات هنا نسبية للجروب
           const x = parseFloat(rect.getAttribute('x'));
           const y = parseFloat(rect.getAttribute('y'));
           const width = parseFloat(rect.getAttribute('width'));
           const height = parseFloat(rect.getAttribute('height'));
 
-          // 🛠️ الإحداثيات المطلقة بالنسبة للـ SVG
           const absoluteX = x + groupOffsetX;
           const absoluteY = y; 
 
-          // 3. إنشاء Clip Path (الإحداثيات الكلية المطلقة)
           let clip = document.createElementNS('http://www.w3.org/2000/svg','clipPath');
           clip.setAttribute('id', clipPathId);
           let clipRect = document.createElementNS('http://www.w3.org/2000/svg','rect');
@@ -218,7 +204,6 @@
           clipDefs.appendChild(clip).appendChild(clipRect);
 
 
-          // 4. إنشاء الجزء المكبر
           const zoomPart = document.createElementNS('http://www.w3.org/2000/svg','image');
 
           zoomPart.setAttribute('href', imageData.src);
@@ -227,25 +212,20 @@
           zoomPart.setAttribute('class','zoom-part');
           zoomPart.setAttribute('clip-path', `url(#${clipPathId})`);
 
-          // 🛠️ ضبط إحداثيات الصورة المكبرة (تبدأ من إحداثيات الجروب الأب المطلقة)
           zoomPart.setAttribute('x', groupOffsetX); 
           zoomPart.setAttribute('y', 0); 
 
-          // تحديد مركز التحويل ليكون مركز المستطيل المطلق
           zoomPart.style.transformOrigin = `${absoluteX + width/2}px ${absoluteY + height/2}px`;
           zoomPart.style.opacity = 0;
 
-          // إضافة الجزء المزوم مباشرة للـ SVG الرئيسي
           mainSvg.appendChild(zoomPart);
-          activeState.zoomPart = zoomPart; // تسجيل الجزء المزوم
+          activeState.zoomPart = zoomPart;
 
-          // 5. تطبيق التحويلات
-          rect.style.transformOrigin = `${x + width/2}px ${y + height/2}px`; // هنا الإحداثيات نسبية للجروب
+          rect.style.transformOrigin = `${x + width/2}px ${y + height/2}px`;
           rect.style.transform = `scale(${scale})`;
           zoomPart.style.transform = `scale(${scale})`;
           zoomPart.style.opacity = 1;
 
-          // 6. تشغيل الوهج وتسجيل الـ Interval ID
           let hue = 0;
           const animationId = setInterval(() => {
             hue = (hue + 1) % 360;
@@ -253,24 +233,23 @@
             rect.style.filter = glow;
             if(zoomPart) zoomPart.style.filter = glow;
           }, 100);
-          activeState.animationId = animationId; // تسجيل الـ ID
+          activeState.animationId = animationId;
         }
 
         function stopHover(e) {
-          // نتأكد أن الحدث صادر عن المستطيل النشط حالياً قبل التنظيف
           const targetRect = e ? (e.target.tagName === 'rect' ? e.target : e.target.closest('a')?.querySelector('.image-mapper-shape')) : rect;
           
-          if(targetRect === activeState.rect){
+          // التنظيف يتم فقط عند الإزالة بالماوس أو عند التوقف في الموبايل 
+          // (معتمدين على أن المتصفح هيفتح الرابط في الـ touchend)
+          if(targetRect === activeState.rect && e.type === 'mouseout'){
               cleanupHover();
           }
         }
       }
 
-      // 🛠️ نطبق الـ attachHover على كل المستطيلات في كل الجروبات الموجودة
       groups.forEach(group => {
           group.querySelectorAll('.image-mapper-shape').forEach((rect, i) => attachHover(rect, i));
 
-          // 🛠️ نراقب الجروب عشان لو أضيفت مستطيلات جديدة ديناميكياً
           const observer = new MutationObserver(mutations => {
             mutations.forEach(mutation => {
               mutation.addedNodes.forEach((node, i) => {
@@ -283,7 +262,22 @@
           });
           observer.observe(group,{childList:true, subtree:true});
       });
+      
+      function setLinkTarget() {
+        const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0) || (window.innerWidth < 800);
+        
+        const allLinks = document.querySelectorAll('a[xlink\\:href], a[href]');
 
+        allLinks.forEach(link => {
+          if (isMobile) {
+            link.removeAttribute('target');
+          } else {
+            link.setAttribute('target', '_blank'); 
+          }
+        });
+      }
+
+      setLinkTarget();
     </script>
 </body>
 </html>
