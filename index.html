@@ -35,8 +35,9 @@
       transform-origin: center center;
       transition: transform 0.3s ease, filter 0.3s ease;
     }
-    .image-mapper-shape#red { stroke: red; }
-    .image-mapper-shape#blue { stroke: blue; }
+    /* 🛠️ تعديل CSS: استخدام فئات بدل IDs للألوان */
+    .red-stroke { stroke: red; }
+    .blue-stroke { stroke: blue; }
 
     .zoom-part {
       pointer-events: none;
@@ -58,22 +59,23 @@
 
       <a href="micro/1.pdf"><rect x="368" y="703" width="115" height="380" class="image-mapper-shape"/></a>
       <a href="patho/1.pdf"><rect x="368" y="1083" width="115" height="253.5" class="image-mapper-shape"/></a>
-      <a href="patho/q/1.pdf"><rect x="368" y="1339" width="115" height="125" id="red" class="image-mapper-shape"/></a>
+      <a href="patho/q/1.pdf"><rect x="368" y="1339" width="115" height="125" class="image-mapper-shape red-stroke"/></a>
       <a href="physio/2.pdf"><rect x="368" y="1465" width="115" height="380" class="image-mapper-shape"/></a>
       <a href="anatomy/1.pdf"><rect x="368" y="1845" width="115" height="380" class="image-mapper-shape"/></a>
       <a href="physio/1.pdf"><rect x="598" y="366" width="114.5" height="315" class="image-mapper-shape"/></a>
       <a href="histo/1.pdf"><rect x="712.35" y="702" width="115" height="380" class="image-mapper-shape"/></a>
       <a href="anatomy/2.pdf"><rect x="712.35" y="1465" width="115" height="380" class="image-mapper-shape"/></a>
       <a href="physio/2.pdf"><rect x="598" y="1846" width="115" height="253.4" class="image-mapper-shape"/></a>
-      <a href="physio/q/1.pdf"><rect x="598" y="2100" width="115" height="127" id="red" class="image-mapper-shape"/></a>
+      <a href="physio/q/1.pdf"><rect x="598" y="2100" width="115" height="127" class="image-mapper-shape red-stroke"/></a>
     </g>
 
     <g transform="translate(1024,0)" id="secondary-group">
       <image xlink:href="image/2.png" width="1024" height="2454" id="secondary-image" preserveAspectRatio="xMidYMid meet"/>
       
       <a xlink:href="https://drive.google.com/file/d/1vLk8z7AGqjlJZx1rvL_e7tQa8arC1qud/view?usp=sharing">
-      <rect x="137.688139619883" y="477.14605263157887" width="115.00860745614034" height="257.49707602339174" id="blue" class="image-mapper-shape"/>
+      <rect x="137.688139619883" y="477.14605263157887" width="115.00860745614034" height="257.49707602339174" class="image-mapper-shape blue-stroke"/>
       </a>
+      
       <a xlink:href="pharma/1.pdf">
       <rect x="137.91991959064327" y="875.84649122807" width="114.8274488304094" height="469.8491228070176" class="image-mapper-shape" data-index="2"></rect>
       </a>
@@ -103,9 +105,15 @@
     <script>
       const mainSvg = document.getElementById('main-svg');
       const clipDefs = document.getElementById('clip-defs');
-      let activeHover = null;
+      
+      // 🛠️ تم استخدام كائن لتسجيل حالة الـ Hover النشطة (Rect، ZoomPart، AnimationID)
+      const activeState = {
+          rect: null,
+          zoomPart: null,
+          animationId: null,
+          clipPathId: null
+      };
 
-      // 🛠️ جلب كل الـ groups اللي فيها تحويل (كل الـ <g>)
       const groups = document.querySelectorAll('g'); 
 
       /**
@@ -114,9 +122,6 @@
       function getTransformX(groupElement) {
           const transformAttr = groupElement.getAttribute('transform');
           if (!transformAttr) return 0;
-
-          // البحث عن قيمة الـ translate(X, Y)
-          // تم تعديل الـ regex ليكون أكثر مرونة مع المسافات والأرقام العشرية
           const match = transformAttr.match(/translate\(\s*([\d\.-]+)\s*,/);
           return match ? parseFloat(match[1]) : 0;
       }
@@ -132,50 +137,65 @@
           const IMAGE_WIDTH = parseFloat(baseImage.getAttribute('width'));
           const IMAGE_HEIGHT = parseFloat(baseImage.getAttribute('height'));
 
-          // التأكد من أن الأبعاد صالحة قبل الإرجاع
           if (isNaN(IMAGE_WIDTH) || isNaN(IMAGE_HEIGHT)) return null;
 
           return { src: IMAGE_SRC, width: IMAGE_WIDTH, height: IMAGE_HEIGHT };
       }
 
+      // 🛠️ دالة موحدة لتنظيف حالة الـ Hover السابقة
+      function cleanupHover() {
+        if (!activeState.rect) return; // لا يوجد شيء لتنظيفه
+          
+        if(activeState.animationId) clearInterval(activeState.animationId);
+
+        activeState.rect.style.transform = 'scale(1)';
+        activeState.rect.style.filter = 'none';
+
+        if(activeState.zoomPart){ activeState.zoomPart.remove(); }
+
+        const currentClip = document.getElementById(activeState.clipPathId);
+        if(currentClip) currentClip.remove();
+          
+        // تصفير الحالة
+        activeState.rect = null;
+        activeState.zoomPart = null;
+        activeState.animationId = null;
+        activeState.clipPathId = null;
+      }
+
 
       function attachHover(rect, i) {
-        let zoomPart = null;
-        let animationId = null;
-        const clipPathId = `clip-${i}`;
+        
+        const clipPathId = `clip-${i}-${Date.now()}`; // ID فريد لكل مستطيل
         const scale = 1.1;
-        // نستخدم closest عشان لو الـ rect جوه a والـ a جوه g
         const parentGroup = rect.closest('g'); 
 
-        // 🛑 لازم يكون فيه صورة في الجروب عشان التأثير يشتغل
         const imageData = getGroupImage(parentGroup);
         if (!imageData) return; 
 
-        const groupOffsetX = getTransformX(parentGroup); // تحديد الإزاحة الأفقية للجروب
+        const groupOffsetX = getTransformX(parentGroup);
 
         rect.setAttribute('data-index', i);
 
         // ... أحداث الماوس واللمس
         rect.addEventListener('mouseover', startHover);
         rect.addEventListener('mouseout', stopHover);
-        // تم إضافة معالجة بسيطة لأحداث اللمس (touch)
         rect.addEventListener('touchstart', (e) => {
-            if(activeHover && activeHover !== rect) {
-                stopHover({target: activeHover});
-            }
-            if(activeHover === rect) return;
+            // إيقاف التعامل مع اللمس مؤقتاً لتجنب تضارب الأحداث
+            e.preventDefault(); 
             startHover();
         });
         rect.addEventListener('touchend', stopHover);
 
         function startHover() {
-          if(activeHover === rect) return;
-          // إيقاف أي hover نشط سابق لو كان مختلف
-          if (activeHover) {
-              const prevRect = activeHover;
-              stopHover({target: prevRect});
-          }
-          activeHover = rect;
+          if(activeState.rect === rect) return;
+
+          // 1. تنظيف الـ Hover النشط السابق
+          cleanupHover(); 
+          
+          // 2. إعداد الحالة الجديدة
+          activeState.rect = rect;
+          activeState.clipPathId = clipPathId;
 
           // الإحداثيات هنا نسبية للجروب
           const x = parseFloat(rect.getAttribute('x'));
@@ -187,7 +207,7 @@
           const absoluteX = x + groupOffsetX;
           const absoluteY = y; 
 
-          // 1. إنشاء Clip Path (الإحداثيات الكلية المطلقة)
+          // 3. إنشاء Clip Path (الإحداثيات الكلية المطلقة)
           let clip = document.createElementNS('http://www.w3.org/2000/svg','clipPath');
           clip.setAttribute('id', clipPathId);
           let clipRect = document.createElementNS('http://www.w3.org/2000/svg','rect');
@@ -198,8 +218,8 @@
           clipDefs.appendChild(clip).appendChild(clipRect);
 
 
-          // 2. إنشاء الجزء المكبر
-          zoomPart = document.createElementNS('http://www.w3.org/2000/svg','image');
+          // 4. إنشاء الجزء المكبر
+          const zoomPart = document.createElementNS('http://www.w3.org/2000/svg','image');
 
           zoomPart.setAttribute('href', imageData.src);
           zoomPart.setAttribute('width', imageData.width);
@@ -217,46 +237,31 @@
 
           // إضافة الجزء المزوم مباشرة للـ SVG الرئيسي
           mainSvg.appendChild(zoomPart);
+          activeState.zoomPart = zoomPart; // تسجيل الجزء المزوم
 
-
-          // 3. تطبيق التحويلات
+          // 5. تطبيق التحويلات
           rect.style.transformOrigin = `${x + width/2}px ${y + height/2}px`; // هنا الإحداثيات نسبية للجروب
           rect.style.transform = `scale(${scale})`;
           zoomPart.style.transform = `scale(${scale})`;
           zoomPart.style.opacity = 1;
 
-          // 4. تشغيل الوهج
+          // 6. تشغيل الوهج وتسجيل الـ Interval ID
           let hue = 0;
-          animationId = setInterval(() => {
+          const animationId = setInterval(() => {
             hue = (hue + 1) % 360;
             const glow = `drop-shadow(0 0 8px hsl(${hue},100%,55%)) drop-shadow(0 0 14px hsl(${(hue+60)%360},100%,60%))`;
             rect.style.filter = glow;
             if(zoomPart) zoomPart.style.filter = glow;
           }, 100);
+          activeState.animationId = animationId; // تسجيل الـ ID
         }
 
         function stopHover(e) {
-          // محاولة تحديد المستطيل الهدف سواء كان هو نفسه أو جوه رابط
+          // نتأكد أن الحدث صادر عن المستطيل النشط حالياً قبل التنظيف
           const targetRect = e ? (e.target.tagName === 'rect' ? e.target : e.target.closest('a')?.querySelector('.image-mapper-shape')) : rect;
-
-          // لو الهدف مش هو المستطيل الحالي، نوقف العملية
-          if(!targetRect || targetRect !== rect) {
-              return; 
-          }
-
-          if(animationId) clearInterval(animationId);
-          animationId = null; 
-
-          rect.style.transform = 'scale(1)';
-          rect.style.filter = 'none';
-
-          if(zoomPart){ zoomPart.remove(); zoomPart = null; }
-
-          const currentClip = document.getElementById(clipPathId);
-          if(currentClip) currentClip.remove();
-
-          if(activeHover === rect) {
-              activeHover = null;
+          
+          if(targetRect === activeState.rect){
+              cleanupHover();
           }
         }
       }
@@ -269,7 +274,6 @@
           const observer = new MutationObserver(mutations => {
             mutations.forEach(mutation => {
               mutation.addedNodes.forEach((node, i) => {
-                // التأكد من أن العنصر المضاف هو رابط ويحتوي على rect
                 if(node.tagName==='A'){
                   const rect = node.querySelector('rect.image-mapper-shape');
                   if(rect) attachHover(rect, Date.now()+i);
