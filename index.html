@@ -126,7 +126,7 @@
           const match = transformAttr.match(/translate\(\s*([\d\.-]+)\s*,\s*([\d\.-]+)\s*\)/);
           return match ? parseFloat(match[2]) : 0;
       }
-      
+
       // الدالة دي زي ما هي لأنها بتجيب بيانات الصورة من المجموعة بشكل صحيح
       function getGroupImage(parentGroup) {
           const baseImage = parentGroup.querySelector('image');
@@ -162,8 +162,8 @@
 
 
       function attachHover(rect, i) {
-        
-        const anchor = rect.closest('a'); // 🆕 إمساك وسم الـ <a>
+
+        const anchor = rect.closest('a'); // إمساك وسم الـ <a>
 
         const clipPathId = `clip-${i}-${Date.now()}`;
         const scale = 1.1;
@@ -177,19 +177,33 @@
 
         rect.setAttribute('data-index', i);
 
+        // 💻 حدث الماوس للكمبيوتر
         rect.addEventListener('mouseover', startHover);
         rect.addEventListener('mouseout', stopHover);
 
+        // 📱 حدث اللمس للموبايل (touchstart بيشغل الـ Hover)
         rect.addEventListener('touchstart', startHover);
+        
+        // 🆕 التعديل المهم هنا: touchend بيقفل الهافر وبيفتح الرابط مباشرةً
         rect.addEventListener('touchend', (e) => {
+             // إيقاف الـ Hover فوراً
              cleanupHover(); 
+             
+             // فتح الرابط يدوياً لضمان عدم وجود delay
+             if (anchor && anchor.href && anchor.href !== '#') {
+                e.preventDefault(); // منع الإجراء الافتراضي
+                
+                // تحديد طريقة فتح الرابط (تاب جديد للكمبيوتر/نفس التاب للموبايل)
+                const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0) || (window.innerWidth < 800);
+                if (!isMobile && anchor.getAttribute('target') === '_blank') {
+                    window.open(anchor.href, '_blank');
+                } else {
+                    window.location.href = anchor.href;
+                }
+             }
         });
-
-        // 🆕 إيقاف الهافر عند الضغط على الرابط (قبل فتح الرابط)
-        if (anchor) {
-            anchor.addEventListener('click', cleanupHover);
-        }
-        // ----------------------------------------------------
+        
+        // ❌ حذفنا الحدث 'click' اللي كان بيعمل التعارض
 
         function startHover() {
           if(activeState.rect === rect) return;
