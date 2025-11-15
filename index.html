@@ -251,20 +251,23 @@
       }
 
       groups.forEach(group => {
-          group.querySelectorAll('.image-mapper-shape').forEach((rect, i) => attachHover(rect, i));
-
-          const observer = new MutationObserver(mutations => {
-            mutations.forEach(mutation => {
-              mutation.addedNodes.forEach((node, i) => {
-                if(node.tagName==='A'){
-                  const rect = node.querySelector('rect.image-mapper-shape');
-                  if(rect) attachHover(rect, Date.now()+i);
-                }
-              });
-            });
+          group.querySelectorAll('.image-mapper-shape').forEach((rect, i) => {
+            rect.setAttribute('data-processed', 'true'); 
+            attachHover(rect, i);
           });
-          observer.observe(group,{childList:true, subtree:true});
       });
+
+      const rootObserver = new MutationObserver(() => {
+        document
+          .querySelectorAll('rect.image-mapper-shape:not([data-processed])')
+          .forEach((rect, i) => {
+            rect.setAttribute('data-processed', 'true');
+            attachHover(rect, i);
+          });
+      });
+
+      rootObserver.observe(mainSvg, { childList: true, subtree: true });
+
 
       function setLinkTarget() {
         const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0) || (window.innerWidth < 800);
