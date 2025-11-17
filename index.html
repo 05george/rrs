@@ -11,17 +11,35 @@
     overflow-x: auto;
     overflow-y: hidden;
     background: black;
-  }#main-svg { height: 100svh; background: black; display: block; }
+  }
+  #main-svg { 
+    height: 100svh; 
+    background: black; 
+    display: block; 
+  }
 
-.image-mapper-shape { fill: transparent; stroke: yellow; stroke-width: 2; transition: transform 0.25s ease, stroke-width 0.25s ease, filter 0.25s ease; transform-box: fill-box; transform-origin: center; }
+/* ⬅️ تم تعديل الـCSS عشان يبقى زي الكود اللي مفهوش رعشة، مع ترك الألوان زي ما هي */
+.image-mapper-shape { 
+    fill: transparent; 
+    stroke: yellow; 
+    stroke-width: 2px; /* تعديل الوحدة */
+    transform-origin: center center; 
+    transition: transform 0.3s ease, filter 0.3s ease, stroke-width 0.3s ease; /* تعديل السرعة */
+}
 
 .q { stroke: red; } .v { stroke: blue; } .ipc { stroke: white; } .o { stroke: #80CBC4; } .a { stroke: #F48FB1; }
 
-.zoom-part { pointer-events: none; opacity: 0; transition: transform 0.25s ease, opacity 0.25s ease, filter 0.25s ease; image-rendering: auto; transform-origin: center; }
+.zoom-part { 
+    pointer-events: none; 
+    opacity: 0; 
+    transition: transform 0.3s ease, filter 0.3s ease, opacity 0.3s ease; /* تعديل السرعة */
+    image-rendering: auto; 
+    transform-origin: center; 
+}
 
-@keyframes glowPulse { 0% { filter: drop-shadow(0 0 6px hsl(0,100%,55%)); } 50% { filter: drop-shadow(0 0 10px hsl(120,100%,60%)); } 100% { filter: drop-shadow(0 0 6px hsl(240,100%,55%)); } }
+/* ⬅️ تم حذف الـ@keyframes glowPulse والـ.glow عشان هنستخدم الـfilter في الـJavaScript مباشرة */
 
-.glow { animation: glowPulse 1.2s infinite linear; } </style>
+</style>
 
 </head>
 <body>
@@ -33,7 +51,7 @@
     <defs id="clip-defs"></defs>
 
     <g transform="translate(0,0)"> الاسبوع الأول
-<image href="image/1.png" width="1024" height="2454" preserveAspectRatio="xMinYMin meet"/> <g transform="translate(368,0)"> الإثنين
+<image href="image/1.png" width="1024" height="2454" preserveAspectRatio="xMinYMin meet" class="base-image"/> <g transform="translate(368,0)"> الإثنين
 <a href="micro/1.pdf"><rect x="0" y="703" width="115" height="380" class="image-mapper-shape"/></a>  
 
 <a href="patho/1.pdf"><rect x="0" y="1083" width="115" height="253.5" class="image-mapper-shape"/></a>  
@@ -61,7 +79,7 @@
 </g>
     <g transform="translate(1024,0)"> الاسبوع الثاني
 
-<image href="image/2.png" width="1024" height="2454" preserveAspectRatio="xMinYMin meet"/> <g transform="translate(139.5,0)"> السبت
+<image href="image/2.png" width="1024" height="2454" preserveAspectRatio="xMinYMin meet" class="base-image"/> <g transform="translate(139.5,0)"> السبت
 <a href="https://drive.google.com/file/d/1vLk8z7AGqjlJZx1rvL_e7tQa8arC1qud/view?usp=sharing"><rect x="0" y="308.9191510221431" width="114.81010065105059" height="113.19699822367954" class="image-mapper-shape v"/></a>
     <a href="pharma/1.pdf"><rect x="0" y="421.1304391087087" width="113.1443225155385" height="227.44459430799515" class="image-mapper-shape"/></a>
     <a href="ipc/Book.pdf"><rect x="0" y="876" width="115" height="349" class="image-mapper-shape ipc"/></a>  
@@ -101,7 +119,40 @@
 (function(){
   const svg = document.getElementById("main-svg");
   const clipDefs = document.getElementById("clip-defs");
-  let active = { rect:null, zoom:null, clip:null };
+  
+  // ⬅️ تعريف حالة النشاط الجديدة (مثل الكود اللي مفهوش رعشة)
+  const activeState = {
+    rect: null,
+    zoomPart: null,
+    animationId: null,
+    clipPathId: null
+  };
+  
+  // ⬅️ متغير جديد لتطبيق التأخير عند الخروج (زي ما اتفقنا)
+  let leaveTimer = null; 
+  const SCALE_AMOUNT = 1.12; 
+
+function getTransformX(groupElement) {
+    if (!groupElement) return 0;
+    const transformAttr = groupElement.getAttribute('transform');
+    if (!transformAttr) return 0;
+    const match = transformAttr.match(/translate\s*\(([\d\.-]+)\s*,\s*([\d\.-]+)\s*\)/);
+    return match ? parseFloat(match[1]) : 0;
+}
+
+function getGroupImage(parentGroup) {
+    const baseImage = parentGroup.querySelector('.base-image');
+    if (!baseImage) return null;
+
+    const IMAGE_SRC = baseImage.getAttribute('href') || baseImage.getAttribute('xlink:href');  
+    const IMAGE_WIDTH = parseFloat(baseImage.getAttribute('width'));  
+    const IMAGE_HEIGHT = parseFloat(baseImage.getAttribute('height'));  
+
+    if (isNaN(IMAGE_WIDTH) || isNaN(IMAGE_HEIGHT)) return null;  
+
+    return { src: IMAGE_SRC, width: IMAGE_WIDTH, height: IMAGE_HEIGHT };
+}
+
 function updateWidth(){
     const weeks = svg.querySelectorAll(':scope > g[transform^="translate"]');
     const w = weeks.length * 1024;
@@ -116,76 +167,117 @@ let touchScrolling = false;
     clearTimeout(touchTimer);
     touchTimer = setTimeout(()=>touchScrolling=false,150);
   },{passive:true});
+  
+// ⬅️ دالة التنظيف الجديدة (من الكود اللي مفهوش رعشة)
 function clearHover(){
-    if(active.rect){ active.rect.classList.remove("glow"); active.rect.style.transform="scale(1)"; active.rect.style.strokeWidth="2"; }
-    if(active.zoom) active.zoom.remove();
-    if(active.clip) active.clip.remove();
-    active = {rect:null, zoom:null, clip:null};
+    if (!activeState.rect) return;
+
+    if(activeState.animationId) clearInterval(activeState.animationId);  
+
+    activeState.rect.style.transform = 'scale(1)';  
+    activeState.rect.style.filter = 'none';  
+    activeState.rect.style.strokeWidth = '2px';
+
+    if(activeState.zoomPart){ activeState.zoomPart.remove(); }  
+
+    const currentClip = document.getElementById(activeState.clipPathId);  
+    if(currentClip) currentClip.remove();  
+
+    activeState.rect = null;  
+    activeState.zoomPart = null;  
+    activeState.animationId = null;  
+    activeState.clipPathId = null;
   }
+  
+// ⬅️ دالة التفعيل الجديدة (من الكود اللي مفهوش رعشة)
 function applyHover(rect){
     if(touchScrolling) return;
+    
+    // ⬅️ إلغاء المؤقت لو دخلنا تاني (يمنع الرعشة)
+    if(leaveTimer) clearTimeout(leaveTimer);
+
+    if(activeState.rect === rect) return; 
+    
     clearHover();
 
-    active.rect = rect;
-    rect.classList.add("glow");
-    rect.style.transform = "scale(1.12)";
-    rect.style.strokeWidth = "3.5";
+    activeState.rect = rect;
+    const clipPathId = "clip-" + Date.now();
+    activeState.clipPathId = clipPathId;
 
     const parentDay = rect.closest('g');
     const parentWeek = rect.closest('svg > g[transform^="translate"]');
-
-    const base = parentWeek.querySelector('image');
-    const imgSrc = base.getAttribute('href');
-    const imgW = +base.getAttribute('width');
-    const imgH = +base.getAttribute('height');
+    const imageData = getGroupImage(parentWeek);
+    
+    if(!imageData) return;
 
     const rx = +rect.getAttribute('x');
     const ry = +rect.getAttribute('y');
     const rw = +rect.getAttribute('width');
     const rh = +rect.getAttribute('height');
 
-    const wx = parseFloat(parentWeek.getAttribute('transform').match(/\d+/)[0]);
-    const dx = parentDay.getAttribute('transform') ? parseFloat(parentDay.getAttribute('transform').match(/\d+/)[0]) : 0;
+    const wx = getTransformX(parentWeek);
+    const dx = getTransformX(parentDay);
 
     const absX = rx + wx + dx;
-    const absY = ry;
+    const absY = ry; // الـY في الكود الأول (المجموعة الأم) بصفر
 
+    // 1. تحديد منطقة القطع (clipPath)
     const clipPath = document.createElementNS("http://www.w3.org/2000/svg","clipPath");
-    const clipId = "clip-" + Date.now();
-    clipPath.setAttribute("id", clipId);
+    clipPath.setAttribute("id", clipPathId);
     const clipRect = document.createElementNS("http://www.w3.org/2000/svg","rect");
     clipRect.setAttribute("x", absX);
     clipRect.setAttribute("y", absY);
     clipRect.setAttribute("width", rw);
     clipRect.setAttribute("height", rh);
-    clipPath.appendChild(clipRect);
-    clipDefs.appendChild(clipPath);
-    active.clip = clipPath;
-
+    clipDefs.appendChild(clipPath).appendChild(clipRect);
+    
+    // 2. إنشاء صورة الـ Zoom
     const zoom = document.createElementNS("http://www.w3.org/2000/svg","image");
-    zoom.setAttribute("href", imgSrc);
-    zoom.setAttribute("width", imgW);
-    zoom.setAttribute("height", imgH);
+    zoom.setAttribute("href", imageData.src);
+    zoom.setAttribute("width", imageData.width);
+    zoom.setAttribute("height", imageData.height);
     zoom.setAttribute("x", wx);
     zoom.setAttribute("y", 0);
     zoom.setAttribute("clip-path", `url(#${clipId})`);
+    zoom.setAttribute('class','zoom-part'); // إضافة الكلاس الجديد
 
     svg.appendChild(zoom);
-    active.zoom = zoom;
+    activeState.zoomPart = zoom;
 
+    // 3. تطبيق التكبير
     const cx = absX + rw/2;
     const cy = absY + rh/2;
+    
+    rect.style.transformOrigin = `${rx + rw/2}px ${ry + rh/2}px`; // التكبير من مركز المستطيل
+    rect.style.transform = `scale(${SCALE_AMOUNT})`;
+    rect.style.strokeWidth = "3.5";
+
     zoom.style.transformOrigin = `${cx}px ${cy}px`;
-    zoom.style.transform = "scale(1.12)";
+    zoom.style.transform = `scale(${SCALE_AMOUNT})`;
     zoom.style.opacity = 1;
+    
+    // 4. تأثير الـ Glow والـ Animation
+    let hue = 0;  
+    const animationId = setInterval(() => {  
+        hue = (hue + 1) % 360;  
+        const glow = `drop-shadow(0 0 8px hsl(${hue},100%,55%)) drop-shadow(0 0 14px hsl(${(hue+60)%360},100%,60%))`;  
+        rect.style.filter = glow;  
+        if(zoom) zoom.style.filter = glow;  
+    }, 100);  
+    activeState.animationId = animationId;
   }
+  
 function activateRects(){
-    svg.querySelectorAll('rect.image-mapper-shape').forEach(rect=>{
+    svg.querySelectorAll('rect.image-mapper-shape').forEach((rect, i)=>{
       if(rect.dataset.ready) return;
       rect.dataset.ready = true;
 
+      // ⬅️ استخدام mouseenter/mouseleave مع التأخير
       rect.addEventListener("mouseenter",()=>applyHover(rect));
-      rect.addEventListener("mouseleave",clearHover);
+      rect.addEventListener("mouseleave",()=>{
+          // ⬅️ تطبيق التأخير عند الخروج (يمنع الرعشة)
+          leaveTimer = setTimeout(clearHover, 100); 
+      });
 
       rect.addEventListener("touchstart",(e)=>{
         e.preventDefault(); 
