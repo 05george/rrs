@@ -102,43 +102,27 @@
   const svg = document.getElementById("main-svg");
   const clipDefs = document.getElementById("clip-defs");
   let active = { rect:null, zoom:null, clip:null };
-
-  /* =============================
-     1) حساب عرض الـ SVG ديناميكيًا
-     ============================= */
-  function updateWidth(){
+function updateWidth(){
     const weeks = svg.querySelectorAll(':scope > g[transform^="translate"]');
     const w = weeks.length * 1024;
     svg.style.width = w + "px";
     svg.setAttribute("viewBox", `0 0 ${w} 2454`);
   }
   updateWidth();
-
-  /* =============================
-     2) فلترة الحركة باللمس لمنع تداخل الزوم مع السحب
-     ============================= */
-  let touchScrolling = false;
+let touchScrolling = false;
   let touchTimer;
   window.addEventListener("touchstart",()=>{
     touchScrolling = true;
     clearTimeout(touchTimer);
     touchTimer = setTimeout(()=>touchScrolling=false,150);
   },{passive:true});
-
-  /* =============================
-     3) تنظيف الهовер بالكامل
-     ============================= */
-  function clearHover(){
+function clearHover(){
     if(active.rect){ active.rect.classList.remove("glow"); active.rect.style.transform="scale(1)"; active.rect.style.strokeWidth="2"; }
     if(active.zoom) active.zoom.remove();
     if(active.clip) active.clip.remove();
     active = {rect:null, zoom:null, clip:null};
   }
-
-  /* =============================
-     4) إنشاء زوم + قص
-     ============================= */
-  function applyHover(rect){
+function applyHover(rect){
     if(touchScrolling) return;
     clearHover();
 
@@ -195,11 +179,7 @@
     zoom.style.transform = "scale(1.12)";
     zoom.style.opacity = 1;
   }
-
-  /* =============================
-     5) تطبيق الهوفر على الريكتات
-     ============================= */
-  function activateRects(){
+function activateRects(){
     svg.querySelectorAll('rect.image-mapper-shape').forEach(rect=>{
       if(rect.dataset.ready) return;
       rect.dataset.ready = true;
@@ -212,17 +192,9 @@
     });
   }
   activateRects();
-
-  /* =============================
-     6) MutationObserver
-     ============================= */
-  const obs = new MutationObserver(()=>activateRects());
+ const obs = new MutationObserver(()=>activateRects());
   obs.observe(svg,{childList:true,subtree:true});
-
-  /* =============================
-     7) الروابط حسب الجهاز
-     ============================= */
-  function updateLinkTargets(){
+function updateLinkTargets(){
     const mobile = matchMedia('(hover: none)').matches;
     svg.querySelectorAll('a').forEach(a=>{
       if(mobile) a.removeAttribute('target');
