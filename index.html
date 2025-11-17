@@ -96,8 +96,7 @@
 </g>
 
 <g transform="translate(370,0)"> الإثنين
-<a href="physio/3.pdf"><rect x="0" y="1369" width="115" height="450" class="image-mapper-shape"/></a>
-    <a href="physio/3.pdf"><rect x="0" y="1363.4886506913804" width="113.6119333433428" height="446.65027041743065" class="image-mapper-shape"/></a>
+    <a href="physio/3.pdf"><rect x="0" y="1369" width="115" height="450" class="image-mapper-shape"/></a>
     <a href="#"><rect x="0" y="422.291127376671" width="114.62348009508963" height="456.42753801636815" class="image-mapper-shape"/></a>
     <a href="#"><rect x="0" y="1812.0873755033645" width="113.932817717675" height="471.4497750874907" class="image-mapper-shape"/></a>
     </g>
@@ -149,11 +148,8 @@
     if (!transformAttr) return 0;  
     const match = transformAttr.match(/translate\s*\(([\d\.-]+)\s*,\s*([\d\.-]+)\s*\)/);  
     return match ? parseFloat(match[2]) : 0;  
-  } 
-
-  // 🔄 البحث عن صورة الخلفية ديناميكياً
-  function getGroupImage(parentGroup) {  
-    // نبحث عن أول عنصر <image> داخل مجموعة الأسبوع
+  }
+  function getGroupImage(parentGroup) { 
     const baseImage = parentGroup.querySelector('image');  
     if (!baseImage) return null;  
     const IMAGE_SRC = baseImage.getAttribute('href') || baseImage.getAttribute('xlink:href');  
@@ -201,9 +197,7 @@
       const width = parseFloat(rect.getAttribute('width'));  
       const height = parseFloat(rect.getAttribute('height'));
 
-      const dayGroup = rect.closest('g'); 
-
-      // 🔄 تحديد مجموعة الأسبوع الرئيسية
+      const dayGroup = rect.closest('g');
       const weekGroup = rect.closest('svg > g[transform*="translate"]'); 
 
       const imageData = getGroupImage(weekGroup);
@@ -212,9 +206,7 @@
       const weekOffsetX = getTransformX(weekGroup);
       const dayOffsetX = getTransformX(dayGroup);
       const weekOffsetY = getTransformY(weekGroup);
-      const dayOffsetY = getTransformY(dayGroup); // في حال كان فيه إزاحة Y لليوم
-
-      // 🔄 حساب الإحداثي المطلق بجمع الإزاحات
+      const dayOffsetY = getTransformY(dayGroup);
       const absoluteX = x + weekOffsetX + dayOffsetX;  
       const absoluteY = y + weekOffsetY + dayOffsetY;  
 
@@ -235,7 +227,7 @@
       zoomPart.setAttribute('clip-path', `url(#${clipPathId})`);
 
       zoomPart.setAttribute('x', weekOffsetX);  
-      zoomPart.setAttribute('y', weekOffsetY); // الإزاحة تبدأ من الأسبوع
+      zoomPart.setAttribute('y', weekOffsetY);
 
       zoomPart.style.transformOrigin = `${absoluteX + width/2}px ${absoluteY + height/2}px`;  
       zoomPart.style.opacity = 0;  
