@@ -9,7 +9,7 @@
     padding: 0;  
     width: 100vw;  
     height: 100svh;  
-    overflow-x: auto;  
+    overflow-x: auto; /* مهم عشان التمرير الأفقي يشتغل */
     overflow-y: hidden;  
     background: black;  
   }  
@@ -20,7 +20,7 @@
   }
 
   #main-svg {
-    width: calc(4 * 1024px);
+    /* هنا هنخلي الـwidth يتظبط بالـJavaScript عشان يبقى ديناميكي */
     height: 100svh;
     max-height: 100svh;
     min-height: 100svh;
@@ -31,9 +31,9 @@
   .image-mapper-shape {
     fill: transparent;
     stroke: yellow;
-    stroke-width: 2px; /* القيمة الأصلية */
+    stroke-width: 2px;
     transform-origin: center center;
-    transition: transform 0.3s ease, filter 0.3s ease, stroke-width 0.3s ease; /* إضافة stroke-width للـtransition */
+    transition: transform 0.3s ease, filter 0.3s ease, stroke-width 0.3s ease;
   }
   .q { stroke: red; }
   .v { stroke: blue; }
@@ -83,13 +83,24 @@
       <a href="#"><rect x="711.65" y="477.08" width="114.73" height="377.84" class="image-mapper-shape"></rect></a>  
       <a href="#"><rect x="712.56" y="1345.18" width="114.07" height="482.93" class="image-mapper-shape"></rect></a>
     </g>  
-  </svg>  
+    
+    </svg>  
 
 <script>  
   const mainSvg = document.getElementById('main-svg');  
   const clipDefs = document.getElementById('clip-defs');  
   const activeState = { rect: null, zoomPart: null, animationId: null, clipPathId: null };  
   const groups = document.querySelectorAll('g');  
+
+  /* دالة ديناميكية لضبط عرض الـSVG حسب عدد المجموعات */
+  function setDynamicSvgWidth() {
+      const numGroups = groups.length;
+      const IMAGE_WIDTH = 1024; 
+      const totalWidth = numGroups * IMAGE_WIDTH; 
+      mainSvg.style.width = `${totalWidth}px`;
+  }
+  setDynamicSvgWidth(); /* تفعيل الدالة عند تحميل الصفحة */
+
 
   function getTransformX(groupElement) {  
     const transformAttr = groupElement.getAttribute('transform');  
@@ -120,7 +131,7 @@
     if(activeState.animationId) clearInterval(activeState.animationId);  
     activeState.rect.style.transform = 'scale(1)';  
     activeState.rect.style.filter = 'none';  
-    activeState.rect.style.strokeWidth = '2px'; /* رجوع لسمك الخط الأصلي */
+    activeState.rect.style.strokeWidth = '2px'; 
     if(activeState.zoomPart){ activeState.zoomPart.remove(); }  
     const currentClip = document.getElementById(activeState.clipPathId);  
     if(currentClip) currentClip.remove();  
@@ -188,7 +199,7 @@
 
       rect.style.transformOrigin = `${x + width/2}px ${y + height/2}px`; 
       rect.style.transform = `scale(${scale})`;  
-      rect.style.strokeWidth = '4px'; /* زيادة سمك الخط وقت الـHover */
+      rect.style.strokeWidth = '4px'; 
 
       zoomPart.style.transform = `scale(${scale})`;  
       zoomPart.style.opacity = 1;  
@@ -201,7 +212,6 @@
         rect.style.filter = glow;  
         if(zoomPart) zoomPart.style.filter = glow;  
         
-        /* تأثير النبض على سمك الخط */
         currentStrokeWidth = (currentStrokeWidth === 4) ? 3.5 : 4;
         rect.style.strokeWidth = `${currentStrokeWidth}px`; 
 
@@ -217,8 +227,8 @@
     }  
   }  
 
-  groups.forEach(group => {  
-      group.querySelectorAll('.image-mapper-shape').forEach((rect, i) => {  
+  groups.forEach((group, i) => {  
+      group.querySelectorAll('.image-mapper-shape').forEach((rect) => {  
         rect.setAttribute('data-processed', 'true');  
         attachHover(rect, i);  
       });  
