@@ -9,8 +9,8 @@
     padding: 0;  
     width: 100vw;  
     height: 100svh;  
-    overflow-x: auto; /* مهم عشان التمرير الأفقي يشتغل */
-    overflow-y: hidden;  
+    overflow-x: auto;
+   overflow-y: hidden;  
     background: black;  
   }  
   body {
@@ -20,7 +20,6 @@
   }
 
   #main-svg {
-    /* هنا هنخلي الـwidth يتظبط بالـJavaScript عشان يبقى ديناميكي */
     height: 100svh;
     max-height: 100svh;
     min-height: 100svh;
@@ -92,27 +91,51 @@
 
 <a href="ipc/a/9.pdf"><rect x="195.5" y="1225" width="57.5" height="121" class="image-mapper-shape a"></rect></a>  
 
-<a href="physio/3.pdf"><rect x="368.5" y="1369" width="115" height="450" class="image-mapper-shape"></rect>
-</a> 
+<a href="physio/3.pdf"><rect x="368.5" y="1369" width="115" height="450" class="image-mapper-shape"></rect></a> 
 
+<a href="https://drive.google.com/file/d/1vLk8z7AGqjlJZx1rvL_e7tQa8arC1qud/view?usp=sharing"><rect x="138.219" y="308.919" width="114.81" height="113.197" class="image-mapper-shape"/></a>
+
+<a href="#"><rect x="60.378" y="-2342.966" width="111.539" height="226.198" class="image-mapper-shape"/></a>
+
+<a href="Pharma/1.bdf"><rect x="139.948" y="421.13" width="113.144" height="227.445" class="image-mapper-shape"/></a>
+
+<a href="#"><rect x="138.525" y="1810.384" width="115.864" height="470.242" class="image-mapper-shape"/></a>
+
+<a href="#"><rect x="368.583" y="422.291" width="114.623" height="456.428" class="image-mapper-shape"/></a>
+
+<a href="physio/3.pdf"><rect x="369.561" y="1363.489" width="113.612" height="446.65" class="image-mapper-shape"/></a>
+
+<a href="#"><rect x="369.109" y="1812.087" width="113.933" height="471.45" class="image-mapper-shape"/></a>
+
+<a href="#"><rect x="484.347" y="1121.298" width="113.839" height="347.867" class="image-mapper-shape"/></a>
+
+<a href="#"><rect x="484.647" y="1470.588" width="112.621" height="340.474" class="image-mapper-shape"/></a>
+
+<a href="#"><rect x="483.598" y="1813.779" width="113.881" height="361.367" class="image-mapper-shape"/></a>
+
+<a href="#"><rect x="599.089" y="1469.19" width="113.726" height="343.199" class="image-mapper-shape"/></a>
+
+<a href="#"><rect x="596.744" y="421.65" width="115.796" height="457.447" class="image-mapper-shape"/></a>
+
+<a href="#"><rect x="712.313" y="422.254" width="114.391" height="340.475" class="image-mapper-shape"/></a>
+
+<a href="#"><rect x="712.868" y="877.494" width="114.638" height="485.435" class="image-mapper-shape"/></a>
+
+<a href="#"><rect x="713.724" y="1364.736" width="113.211" height="447.542" class="image-mapper-shape"/></a>
 </g>  
-
     </svg>  
-
 <script>  
   const mainSvg = document.getElementById('main-svg');  
   const clipDefs = document.getElementById('clip-defs');  
   const activeState = { rect: null, zoomPart: null, animationId: null, clipPathId: null };  
-  const groups = document.querySelectorAll('g');  
-
-  /* دالة ديناميكية لضبط عرض الـSVG حسب عدد المجموعات */
+  const groups = document.querySelectorAll('g'); 
   function setDynamicSvgWidth() {
       const numGroups = groups.length;
       const IMAGE_WIDTH = 1024; 
       const totalWidth = numGroups * IMAGE_WIDTH; 
       mainSvg.style.width = `${totalWidth}px`;
   }
-  setDynamicSvgWidth(); /* تفعيل الدالة عند تحميل الصفحة */
+  setDynamicSvgWidth();
 
 
   function getTransformX(groupElement) {  
