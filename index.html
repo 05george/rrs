@@ -69,6 +69,7 @@
 <a href="anatomy/1.pdf"><rect x="0" y="1845" width="115" height="380" class="image-mapper-shape"/></a>  
 </g> 
 <g transform="translate(598,0)"> الأربع
+
 <a href="physio/1.pdf"><rect x="0" y="366" width="114.5" height="315" class="image-mapper-shape"/></a>  
 
 <a href="physio/2.pdf"><rect x="0" y="1846" width="115" height="253.4" class="image-mapper-shape"/></a>  
@@ -76,12 +77,14 @@
 <a href="physio/q/1.pdf"><rect x="0" y="2100" width="115" height="127" class="image-mapper-shape q"/></a>
 </g>
 <g transform="translate(712.35,0)"> الخميس
+
 <a href="histo/1.pdf"><rect x="0" y="702" width="115" height="380" class="image-mapper-shape"/></a>  
 
 <a href="anatomy/2.pdf"><rect x="0" y="1465" width="115" height="380" class="image-mapper-shape"/></a>  
 </g>  
 </g>
     <g transform="translate(1024,0)"> الاسبوع الثاني
+
 <image href="image/2.png" width="1024" height="2454" id="secondary-image" preserveAspectRatio="xMinYMin meet"/>  
 
 <g transform="translate(140,0)"> السبت
@@ -125,7 +128,8 @@
   const mainSvg = document.getElementById('main-svg');  
   const clipDefs = document.getElementById('clip-defs');  
   const activeState = { rect: null, zoomPart: null, animationId: null, clipPathId: null };  
-  const groups = document.querySelectorAll('g');
+  const groups = document.querySelectorAll('g'); 
+
   function setDynamicSvgWidth() {
       const weekGroups = document.querySelectorAll('svg > g[transform*="translate"]');
       const IMAGE_WIDTH = 1024; 
@@ -133,6 +137,7 @@
       mainSvg.style.width = `${totalWidth}px`;
   }
   setDynamicSvgWidth();
+
   function getTransformX(groupElement) {  
     if (!groupElement) return 0;
     const transformAttr = groupElement.getAttribute('transform');  
@@ -140,6 +145,7 @@
     const match = transformAttr.match(/translate\s*\(([\d\.-]+)\s*,\s*([\d\.-]+)\s*\)/);  
     return match ? parseFloat(match[1]) : 0;  
   } 
+
   function getTransformY(groupElement) {  
     if (!groupElement) return 0;
     const transformAttr = groupElement.getAttribute('transform');  
@@ -147,6 +153,7 @@
     const match = transformAttr.match(/translate\s*\(([\d\.-]+)\s*,\s*([\d\.-]+)\s*\)/);  
     return match ? parseFloat(match[2]) : 0;  
   } 
+
   function getGroupImage(parentGroup) {  
     const baseImage = parentGroup.querySelector('image');  
     if (!baseImage) return null;  
@@ -156,6 +163,7 @@
     if (isNaN(IMAGE_WIDTH) || isNaN(IMAGE_HEIGHT)) return null;  
     return { src: IMAGE_SRC, width: IMAGE_WIDTH, height: IMAGE_HEIGHT };  
   } 
+
   function cleanupHover() {  
     if (!activeState.rect) return;  
     if(activeState.animationId) clearInterval(activeState.animationId);  
@@ -170,6 +178,7 @@
     activeState.animationId = null;  
     activeState.clipPathId = null;  
   }
+
   function attachHover(rect, i) {  
     const anchor = rect.closest('a');  
     const clipPathId = `clip-${i}-${Date.now()}`;  
@@ -192,16 +201,21 @@
       const y = parseFloat(rect.getAttribute('y'));  
       const width = parseFloat(rect.getAttribute('width'));  
       const height = parseFloat(rect.getAttribute('height'));
-      const weekGroup = dayGroup.closest('svg > g[transform*="translate"]'); 
       
+      const dayGroup = rect.closest('g'); 
+
+      const weekGroup = dayGroup.closest('svg > g[transform*="translate"]'); 
+
       const imageData = getGroupImage(weekGroup);
       if (!imageData) return;  
 
       const weekOffsetX = getTransformX(weekGroup);
       const dayOffsetX = getTransformX(dayGroup);
       const weekOffsetY = getTransformY(weekGroup);
+      
       const absoluteX = x + weekOffsetX + dayOffsetX;  
       const absoluteY = y + weekOffsetY;  
+      
       let clip = document.createElementNS('http://www.w3.org/2000/svg','clipPath');  
       clip.setAttribute('id', clipPathId);  
       let clipRect = document.createElementNS('http://www.w3.org/2000/svg','rect');  
@@ -210,18 +224,22 @@
       clipRect.setAttribute('width', width);  
       clipRect.setAttribute('height', height);  
       clipDefs.appendChild(clip).appendChild(clipRect);  
+      
       const zoomPart = document.createElementNS('http://www.w3.org/2000/svg','image');  
       zoomPart.setAttribute('href', imageData.src);  
       zoomPart.setAttribute('width', imageData.width);  
       zoomPart.setAttribute('height', imageData.height);  
       zoomPart.setAttribute('class','zoom-part');  
       zoomPart.setAttribute('clip-path', `url(#${clipPathId})`);
+      
       zoomPart.setAttribute('x', weekOffsetX);  
       zoomPart.setAttribute('y', 0); 
+      
       zoomPart.style.transformOrigin = `${absoluteX + width/2}px ${absoluteY + height/2}px`;  
       zoomPart.style.opacity = 0;  
       mainSvg.appendChild(zoomPart);  
       activeState.zoomPart = zoomPart; 
+      
       rect.style.transformOrigin = `${x + width/2}px ${y + height/2}px`; 
       rect.style.transform = `scale(${scale})`;  
       rect.style.strokeWidth = '4px'; 
@@ -229,7 +247,7 @@
       zoomPart.style.transform = `scale(${scale})`;  
       zoomPart.style.opacity = 1;  
 
-     Glow والـ Animation
+      // تأثير الـ Glow والـ Animation
       let hue = 0;  
       let currentStrokeWidth = 4;
       const animationId = setInterval(() => {  
@@ -252,11 +270,13 @@
       }  
     }  
   }  
-document.querySelectorAll('rect.image-mapper-shape').forEach((rect, i) => {  
+  
+  document.querySelectorAll('rect.image-mapper-shape').forEach((rect, i) => {  
       rect.setAttribute('data-processed', 'true');  
       attachHover(rect, i);  
   });  
-const rootObserver = new MutationObserver(() => {  
+
+  const rootObserver = new MutationObserver(() => {  
     document  
       .querySelectorAll('rect.image-mapper-shape:not([data-processed])')  
       .forEach((rect, i) => {  
