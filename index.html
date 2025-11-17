@@ -55,9 +55,7 @@
     <defs id="clip-defs"></defs>
 
     <g transform="translate(0,0)"> الاسبوع الأول
-<image href="image/1.png" width="1024" height="2454" id="base-image" preserveAspectRatio="xMinYMin meet"/> 
-
-<g transform="translate(368,0)"> الإثنين
+<image href="image/1.png" width="1024" height="2454" preserveAspectRatio="xMinYMin meet"/> <g transform="translate(368,0)"> الإثنين
 <a href="micro/1.pdf"><rect x="0" y="703" width="115" height="380" class="image-mapper-shape"/></a>  
 
 <a href="patho/1.pdf"><rect x="0" y="1083" width="115" height="253.5" class="image-mapper-shape"/></a>  
@@ -85,9 +83,7 @@
 </g>
     <g transform="translate(1024,0)"> الاسبوع الثاني
 
-<image href="image/2.png" width="1024" height="2454" id="secondary-image" preserveAspectRatio="xMinYMin meet"/>  
-
-<g transform="translate(140,0)"> السبت
+<image href="image/2.png" width="1024" height="2454" preserveAspectRatio="xMinYMin meet"/> <g transform="translate(140,0)"> السبت
 <a href="https://drive.google.com/file/d/1vLk8z7AGqjlJZx1rvL_e7tQa8arC1qud/view?usp=sharing"><rect x="0" y="308.9191510221431" width="114.81010065105059" height="113.19699822367954" class="image-mapper-shape v"/></a>
     <a href="pharma/1.pdf"><rect x="0" y="421.1304391087087" width="113.1443225155385" height="227.44459430799515" class="image-mapper-shape"/></a>
     <a href="ipc/book.pdf"><rect x="0" y="876" width="115" height="349" class="image-mapper-shape ipc"/></a>  
@@ -135,6 +131,7 @@
       const IMAGE_WIDTH = 1024; 
       const totalWidth = weekGroups.length * IMAGE_WIDTH; 
       mainSvg.style.width = `${totalWidth}px`;
+      mainSvg.setAttribute('viewBox', `0 0 ${totalWidth} 2454`); // تحديث viewBox
   }
   setDynamicSvgWidth();
 
@@ -154,7 +151,9 @@
     return match ? parseFloat(match[2]) : 0;  
   } 
 
+  // 🔄 البحث عن صورة الخلفية ديناميكياً
   function getGroupImage(parentGroup) {  
+    // نبحث عن أول عنصر <image> داخل مجموعة الأسبوع
     const baseImage = parentGroup.querySelector('image');  
     if (!baseImage) return null;  
     const IMAGE_SRC = baseImage.getAttribute('href') || baseImage.getAttribute('xlink:href');  
@@ -201,10 +200,11 @@
       const y = parseFloat(rect.getAttribute('y'));  
       const width = parseFloat(rect.getAttribute('width'));  
       const height = parseFloat(rect.getAttribute('height'));
-      
+
       const dayGroup = rect.closest('g'); 
 
-      const weekGroup = dayGroup.closest('svg > g[transform*="translate"]'); 
+      // 🔄 تحديد مجموعة الأسبوع الرئيسية
+      const weekGroup = rect.closest('svg > g[transform*="translate"]'); 
 
       const imageData = getGroupImage(weekGroup);
       if (!imageData) return;  
@@ -212,10 +212,12 @@
       const weekOffsetX = getTransformX(weekGroup);
       const dayOffsetX = getTransformX(dayGroup);
       const weekOffsetY = getTransformY(weekGroup);
-      
+      const dayOffsetY = getTransformY(dayGroup); // في حال كان فيه إزاحة Y لليوم
+
+      // 🔄 حساب الإحداثي المطلق بجمع الإزاحات
       const absoluteX = x + weekOffsetX + dayOffsetX;  
-      const absoluteY = y + weekOffsetY;  
-      
+      const absoluteY = y + weekOffsetY + dayOffsetY;  
+
       let clip = document.createElementNS('http://www.w3.org/2000/svg','clipPath');  
       clip.setAttribute('id', clipPathId);  
       let clipRect = document.createElementNS('http://www.w3.org/2000/svg','rect');  
@@ -224,22 +226,22 @@
       clipRect.setAttribute('width', width);  
       clipRect.setAttribute('height', height);  
       clipDefs.appendChild(clip).appendChild(clipRect);  
-      
+
       const zoomPart = document.createElementNS('http://www.w3.org/2000/svg','image');  
       zoomPart.setAttribute('href', imageData.src);  
       zoomPart.setAttribute('width', imageData.width);  
       zoomPart.setAttribute('height', imageData.height);  
       zoomPart.setAttribute('class','zoom-part');  
       zoomPart.setAttribute('clip-path', `url(#${clipPathId})`);
-      
+
       zoomPart.setAttribute('x', weekOffsetX);  
-      zoomPart.setAttribute('y', 0); 
-      
+      zoomPart.setAttribute('y', weekOffsetY); // الإزاحة تبدأ من الأسبوع
+
       zoomPart.style.transformOrigin = `${absoluteX + width/2}px ${absoluteY + height/2}px`;  
       zoomPart.style.opacity = 0;  
       mainSvg.appendChild(zoomPart);  
       activeState.zoomPart = zoomPart; 
-      
+
       rect.style.transformOrigin = `${x + width/2}px ${y + height/2}px`; 
       rect.style.transform = `scale(${scale})`;  
       rect.style.strokeWidth = '4px'; 
@@ -270,7 +272,7 @@
       }  
     }  
   }  
-  
+
   document.querySelectorAll('rect.image-mapper-shape').forEach((rect, i) => {  
       rect.setAttribute('data-processed', 'true');  
       attachHover(rect, i);  
